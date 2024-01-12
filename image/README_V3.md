@@ -140,3 +140,115 @@ No.4 不修改通道强度，AB两通道均连续输出波形:<br/>
 3-> 0xB0+0b0000+0b0000+0+0+{30,30,30,30}+{80,90,100,100}+{10,10,10,10}+{0,0,0,10}<br/>(HEX:0xB00000001E1E1E1E505A64640A0A0A0A0000000A)<br/>
 4-> 0xB0+0b0000+0b0000+0+0+{40,60,80,100}+{0,90,90,90}+{10,10,10,10}+{0,0,0,10}<br/>(HEX:0xB0000000283C5064005A5A5A0A0A0A0A0000000A)<br/>
 ...
+
+关于序列号与强度输入的例子(以A通道举例):
+```
+isInputAllowed = true(当前是否允许输入强度)
+accumulatedStrengthValueA = 0(A通道未写入的累计强度变化值)
+deviceStrengthValueA = 0(脉冲主机当前A通道强度值)
+orderNo = 0(序列号)
+inputOrderNo = 0(B0写入的序列号)
+strengthParsingMethod = 0b0000(强度值解读方式)
+strengthSettingValueA = 0(A通道强度设定值)
+
+A通道强度相关数据处理函数
+fun strengthDataProcessingA():Unit{
+    if(isInputAllowed == true) {
+         strengthParsingMethod = if(accumulatedStrengthValueA > 0){
+             0b0100
+         }else if(accumulatedStrengthValueA < 0){
+             0b1000
+         }else{
+             0b0000
+         }
+         orderNo += 1
+         inputOrderNo = orderNo
+         isInputAllowed = false
+         strengthSettingValueA = abs(accumulatedStrengthValueA)(取绝对值)
+         accumulatedStrengthValueA = 0
+     }else{
+         orderNo = 0
+         strengthParsingMethod = 0b0000
+         strengthSettingValueA = 0
+     }
+}
+A通道强度回应消息处理函数
+fun strengthDataCallback(returnOrderNo : Int,returnStrengthValueA : Int):Unit{
+    //returnOrderNo 返回输入的序列号
+    //returnStrengthValueA 返回脉冲主机当前A通道强度
+    
+    deviceStrengthValueA = returnStrengthValueA
+    if(returnOrderNo == inputNo){
+         isInputAllowed = true
+         strengthParsingMethod = 0b0000
+         strengthSettingValueA = 0
+         inputOrderNo = 0
+     }
+}
+A通道强度设置0
+fun strengthZero():Unit{
+    strengthParsingMethod = 0b1100
+    strengthSettingValueA = 0
+    orderNo = 1
+    inputOrderNo = orderNo
+}
+```
+以下顺序为时间顺序，但序号并不代表某个具体时刻:<br/>
+```
+1 -> 按下A通道强度‘+’按钮
+     accumulatedStrengthValueA += 1(值 = 1)
+2 -> (100ms周期)B0准备写入
+     strengthDataProcessingA()
+     BLE WRITE 150A(0xB0 + orderNo(0b0001) + strengthParsingMethod(0b0100) + strengthSettingValueA(1) + ......)
+3 -> (100ms周期)B0准备写入
+     strengthDataProcessingA()
+     BLE WRITE 150A(0xB0 + orderNo(0b0000) + strengthParsingMethod(0b0000) + strengthSettingValueA(1) + ......)
+3 -> 150B返回A通道强度值
+     BLE NOTIFY 150B(0xB1 + returnOrderNo(1) + returnStrengthValueA(1) + ......)
+     返回的序列号 = 1，返回的A通道强度 = 1
+     strengthDataCallback(1,1)
+4 -> 按下A通道强度‘+’按钮    
+     accumulatedStrengthValueA += 1(值 = 1)
+5 -> 按下A通道强度‘+’按钮 
+     accumulatedStrengthValueA += 1(值 = 2)
+6 -> 按下A通道强度‘+’按钮 
+     accumulatedStrengthValueA += 1(值 = 3)
+7 -> (100ms周期)B0准备写入
+     strengthDataProcessingA()
+     BLE WRITE 150A(0xB0 + orderNo(0b0100) + strengthParsingMethod(0b0100) + strengthSettingValueA(3) + ......)
+8 -> 按下A通道强度‘+’按钮 
+     accumulatedStrengthValueA += 1(值 = 1)  
+9 -> (100ms周期)B0准备写入
+     strengthDataProcessingA()
+     BLE WRITE 150A(0xB0 + orderNo(0b0000) + strengthParsingMethod(0b0000) + strengthSettingValueA(1) + ......)     
+10-> 150B返回A通道强度值
+     BLE NOTIFY 150B(0xB1 + returnOrderNo(1) + returnStrengthValueA(4) + ......)
+     返回的序列号 = 1，返回的A通道强度 = 4
+     strengthDataCallback(1,4)     
+11-> 按下A通道强度‘+’按钮 
+     accumulatedStrengthValueA += 1(值 = 2)
+12-> (100ms周期)B0准备写入
+     strengthDataProcessingA()
+     BLE WRITE 150A(0xB0 + orderNo(0b0100) + strengthParsingMethod(0b0100) + strengthSettingValueA(2) + ......)
+13-> 按下A通道强度‘-’按钮 
+     accumulatedStrengthValueA -= 1(值 = -1)
+14-> 150B返回A通道强度值
+     BLE NOTIFY 150B(0xB1 + returnOrderNo(1) + returnStrengthValueA(6) + ......)
+     返回的序列号 = 1，返回的A通道强度 = 6
+     strengthDataCallback(1,4) 
+15-> (100ms周期)B0准备写入
+     strengthDataProcessingA()
+     BLE WRITE 150A(0xB0 + orderNo(0b1000) + strengthParsingMethod(0b1000) + strengthSettingValueA(1) + ......)
+16-> 150B返回A通道强度值
+     BLE NOTIFY 150B(0xB1 + returnOrderNo(2) + returnStrengthValueA(5) + ......)
+     返回的序列号 = 2，返回的A通道强度 = 5
+     strengthDataCallback(1,5)
+17-> (100ms周期)B0准备写入
+     strengthZero()
+     BLE WRITE 150A(0xB0 + orderNo(0b0001) + strengthParsingMethod(0b1100) + strengthSettingValueA(0) + ......)
+18-> 150B返回A通道强度值
+     BLE NOTIFY 150B(0xB1 + returnOrderNo(1) + returnStrengthValueA(0) + ......)
+     返回的序列号 = 1，返回的A通道强度 = 0
+     strengthDataCallback(1,0) 
+......     
+```
