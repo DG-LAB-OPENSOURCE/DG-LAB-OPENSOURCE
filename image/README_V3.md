@@ -235,7 +235,7 @@ fun strengthZero():Unit{
 14-> 150B返回A通道强度值
      BLE NOTIFY 150B(0xB1 + returnOrderNo(1) + returnStrengthValueA(6) + ......)
      返回的序列号 = 1，返回的A通道强度 = 6
-     strengthDataCallback(1,4) 
+     strengthDataCallback(1,6) 
 15-> (100ms周期)B0准备写入
      strengthDataProcessingA()
      BLE WRITE 150A(0xB0 + orderNo(0b1000) + strengthParsingMethod(0b1000) + strengthSettingValueA(1) + ......)
