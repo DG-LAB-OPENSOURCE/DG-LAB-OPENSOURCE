@@ -220,7 +220,7 @@ fun strengthZero():Unit{
      accumulatedStrengthValueA += 1(值 = 1)  
 9 -> (100ms周期)B0准备写入
      strengthDataProcessingA()
-     BLE WRITE 150A(0xB0 + orderNo(0b0000) + strengthParsingMethod(0b0000) + strengthSettingValueA(1) + ......)     
+     BLE WRITE 150A(0xB0 + orderNo(0b0000) + strengthParsingMethod(0b0000) + strengthSettingValueA(0) + ......)     
 10-> 150B返回A通道强度值
      BLE NOTIFY 150B(0xB1 + returnOrderNo(1) + returnStrengthValueA(4) + ......)
      返回的序列号 = 1，返回的A通道强度 = 4
