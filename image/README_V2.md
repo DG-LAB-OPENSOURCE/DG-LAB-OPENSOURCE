@@ -11,8 +11,8 @@
 | :------------: | :------------: | :------------: |
 | Battery_Level  | 设备当前电量    | 1byte(整数0-100)|
 | PWM_AB2        | AB两通道强度    | 23-22bit(保留)	21-11bit(B通道实际强度)	10-0bit(A通道实际强度)  |
-| PWM_A34        | A通道波形数据   | 23-20bit(保留)	19-15bit(Az)	14-5bit(Ay)	4-0bit(Ax)  |
-| PWM_B34        | B通道波形数据   | 23-20bit(保留)	19-15bit(Bz)	14-5bit(By)	4-0bit(Bx)  |
+| PWM_A34        | B通道波形数据   | 23-20bit(保留)	19-15bit(Az)	14-5bit(Ay)	4-0bit(Ax)  |
+| PWM_B34        | A通道波形数据   | 23-20bit(保留)	19-15bit(Bz)	14-5bit(By)	4-0bit(Bx)  |
 
 > 基础UUID: 955A`xxxx`-0FE2-F5AA-A094-84B8D4F3E8AD (将xxxx替换为服务的UUID)
 
