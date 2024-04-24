@@ -162,6 +162,7 @@ SOCKET根据对应的ID将json转发给第三方终端，终端收到 type = msg
 1. 二维码必须包含我们的APP官网下载地址: https://www.dungeon-lab.com/app-download.php
 2. 二维码必须包含标签: DGLAB-SOCKET
 3. 二维码必须包含SOCKET服务地址,且含有终端ID信息,且服务地址与ID信息之间不得再有其他内容
+   
    举例：
    1. 正确 -> wss://ws.dungeon-lab.cn/xxxx-xxxxxxxxx-xxxxx-xxxxx-xx
    2. 错误 -> wss://ws.dungeon-lab.cn/xxxx/xxxx-xxxxxxxxx-xxxxx-xxxxx-xx
