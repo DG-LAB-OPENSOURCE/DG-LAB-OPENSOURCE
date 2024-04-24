@@ -99,7 +99,7 @@ SOCKET服务根据对应的ID将json转发给APP，APP收到 type = msg，messag
 
 1. A通道强度+5 -> strength-1+1+5
 2. B通道强度归零 -> strength-2+2+0
-3. B通道强度-20 -> strength-2+1+20
+3. B通道强度-20 -> strength-2+0+20
 4. A通道强度指定为35 -> strength-1+2+35
 
 * Tips 指令必须严格按照协议编辑，任何非法的指令都会在APP端丢弃，不会执行
