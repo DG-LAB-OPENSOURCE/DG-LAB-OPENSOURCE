@@ -9,11 +9,11 @@ DG-LAB设备在全球范围得到广大朋友的认可与喜爱.很多朋友们�
 
 ### 郊狼情趣脉冲主机V2
 
-[蓝牙协议V2](image/README_V2.md)
+[蓝牙协议V2](coyote/v2/README_V2.md)
 
 ### 郊狼情趣脉冲主机V3
 
-[蓝牙协议V3](image/README_V3.md)
+[蓝牙协议V3](coyote/v3/README_V3.md)
 
 [SOCKET控制协议](socket/README.md)
 
