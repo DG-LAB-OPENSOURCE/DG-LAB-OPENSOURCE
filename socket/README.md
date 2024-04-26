@@ -195,4 +195,4 @@ SOCKET根据对应的ID将json转发给第三方终端，终端收到 type = msg
 
 500 - 服务器内部异常
 
-> 如有问题，请咨询 service@dungeon-lab.com
+> 如有问题，请咨询service@dungeon-lab.com 或 发起issues
