@@ -52,6 +52,12 @@ wss.on('connection', function connection(ws) {
             return;
         }
 
+        // 非法消息来源拒绝
+        if (clients.get(data.clientId) !== ws && clients.get(data.targetId) !== ws) {
+            ws.send(JSON.stringify({ type: 'msg', clientId: "", targetId: "", message: '404' }))
+            return;
+        }
+
         if (data.type && data.clientId && data.message && data.targetId) {
             // 优先处理绑定关系
             const { clientId, targetId, message, type } = data;
@@ -274,7 +280,7 @@ wss.on('connection', function connection(ws) {
 function delaySendMsg(clientId, client, target, sendDataA, sendDataB, totalSendsA, totalSendsB, timeSpace) {
     // 发信计时器 AB通道会分别发送不同的消息和不同的数量 必须等全部发送完才会取消这个消息 新消息可以覆盖
     target.send(JSON.stringify(sendDataA)); //立即发送一次AB通道的消息
-    target.send(JSON.stringify(sendDataB)); 
+    target.send(JSON.stringify(sendDataB));
     totalSendsA--;
     totalSendsB--;
     if (totalSendsA > 0 || totalSendsB > 0) {
