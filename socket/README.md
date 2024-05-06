@@ -151,6 +151,58 @@ SOCKET根据对应的ID将json转发给第三方终端，终端收到 type = msg
 
 * Tips 您可以在自己开发的终端自由拟定每个形状代表了APP用户的某种反馈
 
+#### 前端协议(重要)
+
+如果您希望自己开发前端但完全使用我们的后端代码，那么您的前端协议与以上内容有所不同。
+
+1. 强度操作：
+   
+   type : 1 -> 通道强度减少; 2 -> 通道强度增加; 3 -> 通道强度指定为某个值
+
+   strength: 强度值变化量/指定强度值(当type为1或2时，该值会被强制设置为1)
+   
+   message: 'set channel' 固定不变
+
+   channel: 1 -> A通道; 2 -> B通道
+
+   clientId: 终端ID
+
+   targetId: APP ID
+
+   A通道强度减5 : { type : 1,strength: 5,message : 'set channel',channel:1,clientId:xxxx-xxxxxxxxx-xxxxx-xxxxx-xx,targetId:xxxx-xxxxxxxxx-xxxxx-xxxxx-xx }
+
+   B通道强度加1 : { type : 2,strength: 1,message : 'set channel',channel:2,clientId:xxxx-xxxxxxxxx-xxxxx-xxxxx-xx,targetId:xxxx-xxxxxxxxx-xxxxx-xxxxx-xx }
+
+   B通道强度变0 : { type : 3,strength: 0,message : 'set channel',channel:2,clientId:xxxx-xxxxxxxxx-xxxxx-xxxxx-xx,targetId:xxxx-xxxxxxxxx-xxxxx-xxxxx-xx }
+
+2. 波形数据:
+   
+   后端代码中默认波形数据发送间隔为200ms，您可以根据您的波形数据来调整后端的波形数据发送间隔
+   
+   type : clientMsg 固定不变
+
+   message : A通道波形数据(16进制HEX数组json,具体见上面的协议说明)
+
+   message2 : B通道波形数据(16进制HEX数组json,具体见上面的协议说明)
+
+   time1 : A通道波形数据持续发送时长
+
+   time2 : B通道波形数据持续发送时长
+
+   clientId: 终端ID
+
+   targetId: APP ID
+
+3. 清空波形队列:
+
+   type : msg 固定不变
+
+   message: clear-1 -> 清除A通道波形队列; clear-2 -> 清除B通道波形队列
+
+   clientId: 终端ID
+
+   targetId: APP ID
+
 #### 终端二维码
 
 第三方终端的二维码必须按照协议指定方式来生成，否则APP将无法识别该二维码
