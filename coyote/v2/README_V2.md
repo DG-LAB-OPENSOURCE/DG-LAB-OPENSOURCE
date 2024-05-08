@@ -14,6 +14,10 @@
 | PWM_A34        | B通道波形数据   | 23-20bit(保留)	19-15bit(Az)	14-5bit(Ay)	4-0bit(Ax)  |
 | PWM_B34        | A通道波形数据   | 23-20bit(保留)	19-15bit(Bz)	14-5bit(By)	4-0bit(Bx)  |
 
+### 蓝牙名称
+
+脉冲主机2.0 : D-LAB ESTIM01
+
 > 基础UUID: 955A`xxxx`-0FE2-F5AA-A094-84B8D4F3E8AD (将xxxx替换为服务的UUID)
 
 ### 基本原理
