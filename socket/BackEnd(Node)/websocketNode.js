@@ -123,42 +123,53 @@ wss.on('connection', function connection(ws) {
                         ws.send(JSON.stringify(data))
                         return;
                     }
-                    if (!data.message2) {
-                        const data = { type: "error", clientId, targetId, message: "501" }
+                    if (!data.channel) {
+                        // 240531.现在必须指定通道(允许一次只覆盖一个正在播放的波形)
+                        const data = { type: "error", clientId, targetId, message: "406-channel is empty" }
                         ws.send(JSON.stringify(data))
                         return;
                     }
                     if (clients.has(targetId)) {
-                        let sendtimeA = data.time1 ? data.time1 : punishmentDuration; // AB通道的执行时间可以独立
-                        let sendtimeB = data.time2 ? data.time2 : punishmentDuration;
+                        //消息体 默认最少一个消息
+                        let sendtime = data.time ? data.time : punishmentDuration; // AB通道的执行时间
                         const target = clients.get(targetId); //发送目标
-                        const sendDataA = { type: "msg", clientId, targetId, message: "pulse-" + data.message }
-                        const sendDataB = { type: "msg", clientId, targetId, message: "pulse-" + data.message2 }
-                        let totalSendsA = punishmentTime * sendtimeA;
-                        let totalSendsB = punishmentTime * sendtimeB;
+                        const sendData = { type: "msg", clientId, targetId, message: "pulse-" + data.message }
+                        let totalSends = punishmentTime * sendtime;
                         const timeSpace = 1000 / punishmentTime;
 
-                        console.log("消息发送中，总消息数A：" + totalSendsA + "总消息数B：" + totalSendsB + "持续时间A：" + sendtimeA + "持续时间B：" + sendtimeB)
-                        if (clientTimers.has(clientId)) {
-                            // 计时器尚未工作完毕, 清除计时器且发送清除APP队列消息，延迟150ms重新发送新数据
+                        if (clientTimers.has(clientId + "-" + data.channel)) {
+                            // A通道计时器尚未工作完毕, 清除计时器且发送清除APP队列消息，延迟150ms重新发送新数据
                             // 新消息覆盖旧消息逻辑
-                            ws.send("当前有正在发送的消息，覆盖之前的消息")
+                            console.log("通道" + data.channel + "覆盖消息发送中，总消息数：" + totalSends + "持续时间A：" + sendtime)
+                            ws.send("当前通道" + data.channel + "有正在发送的消息，覆盖之前的消息")
 
-                            const timerId = clientTimers.get(clientId);
+                            const timerId = clientTimers.get(clientId + "-" + data.channel);
                             clearInterval(timerId); // 清除定时器
-                            clientTimers.delete(clientId); // 清除 Map 中的对应项
+                            clientTimers.delete(clientId + "-" + data.channel); // 清除 Map 中的对应项
 
                             // 发送APP波形队列清除指令
-                            const clearDataA = { clientId, targetId, message: "clear-1", type: "msg" }
-                            const clearDataB = { clientId, targetId, message: "clear-2", type: "msg" }
-                            target.send(JSON.stringify(clearDataA));
-                            target.send(JSON.stringify(clearDataB));
+                            switch (data.channel) {
+                                case "A":
+                                    const clearDataA = { clientId, targetId, message: "clear-1", type: "msg" }
+                                    target.send(JSON.stringify(clearDataA));
+                                    break;
+
+                                case "B":
+                                    const clearDataB = { clientId, targetId, message: "clear-2", type: "msg" }
+                                    target.send(JSON.stringify(clearDataB));
+                                    break;
+                                default:
+                                    break;
+                            }
+
                             setTimeout(() => {
-                                delaySendMsg(clientId, ws, target, sendDataA, sendDataB, totalSendsA, totalSendsB, timeSpace);
+                                delaySendMsg(clientId, ws, target, sendData, totalSends, timeSpace, data.channel);
                             }, 150);
-                        } else {
+                        } 
+                        else {
                             // 不存在未发完的消息 直接发送
-                            delaySendMsg(clientId, ws, target, sendDataA, sendDataB, totalSendsA, totalSendsB, timeSpace);
+                            delaySendMsg(clientId, ws, target, sendData, totalSends, timeSpace, data.channel);
+                            console.log("通道" + data.channel +"消息发送中，总消息数：" + totalSends + "持续时间：" + sendtime)
                         }
                     } else {
                         console.log(`未找到匹配的客户端，clientId: ${clientId}`);
@@ -277,26 +288,20 @@ wss.on('connection', function connection(ws) {
     }
 });
 
-function delaySendMsg(clientId, client, target, sendDataA, sendDataB, totalSendsA, totalSendsB, timeSpace) {
-    // 发信计时器 AB通道会分别发送不同的消息和不同的数量 必须等全部发送完才会取消这个消息 新消息可以覆盖
-    target.send(JSON.stringify(sendDataA)); //立即发送一次AB通道的消息
-    target.send(JSON.stringify(sendDataB));
-    totalSendsA--;
-    totalSendsB--;
-    if (totalSendsA > 0 || totalSendsB > 0) {
+function delaySendMsg(clientId, client, target, sendData, totalSends, timeSpace, channel) {
+    // 发信计时器 通道会分别发送不同的消息和不同的数量 必须等全部发送完才会取消这个消息 新消息可以覆盖
+    target.send(JSON.stringify(sendData)); //立即发送一次通道的消息
+    totalSends--;
+    if (totalSends > 0) {
         return new Promise((resolve, reject) => {
             // 按频率发送消息给特定的客户端
             const timerId = setInterval(() => {
-                if (totalSendsA > 0) {
-                    target.send(JSON.stringify(sendDataA));
-                    totalSendsA--;
-                }
-                if (totalSendsB > 0) {
-                    target.send(JSON.stringify(sendDataB));
-                    totalSendsB--;
+                if (totalSends > 0) {
+                    target.send(JSON.stringify(sendData));
+                    totalSends--;
                 }
                 // 如果达到发送次数上限，则停止定时器
-                if (totalSendsA <= 0 && totalSendsB <= 0) {
+                if (totalSends <= 0) {
                     clearInterval(timerId);
                     client.send("发送完毕")
                     clientTimers.delete(clientId); // 删除对应的定时器
@@ -304,8 +309,8 @@ function delaySendMsg(clientId, client, target, sendDataA, sendDataB, totalSends
                 }
             }, timeSpace); // 每隔频率倒数触发一次定时器
 
-            // 存储clientId与其对应的timerId
-            clientTimers.set(clientId, timerId);
+            // 存储clientId与其对应的timerId和通道
+            clientTimers.set(clientId + "-" + channel, timerId);
         });
     }
 }

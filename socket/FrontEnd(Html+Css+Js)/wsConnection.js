@@ -221,8 +221,10 @@ function sendCustomMsg() {
     const msg1 = `A:${waveData[selectA]}`;
     const msg2 = `B:${waveData[selectB]}`;
 
-    const data = { type: "clientMsg", message: msg1, message2: msg2, time1: timeA, time2: timeB }
-    sendWsMsg(data)
+    const dataA = { type: "clientMsg", message: msg1, time: timeA, channel: "A" }
+    const dataB = { type: "clientMsg", message: msg2, time: timeB, channel: "B" }
+    sendWsMsg(dataA)
+    sendWsMsg(dataB)
 
     fangdouSetTimeOut = setTimeout(() => {
         clearTimeout(fangdouSetTimeOut);
