@@ -180,7 +180,7 @@ SOCKET根据对应的ID将json转发给第三方终端，终端收到 type = msg
 
 1. 强度操作：
    
-   type : 1 -> 通道强度减少; 2 -> 通道强度增加; 3 -> 通道强度指定为某个值
+   type : 1 -> 通道强度减少; 2 -> 通道强度增加; 3 -> 通道强度归零 ;4 -> 通道强度指定为某个值
 
    strength: 强度值变化量/指定强度值(当type为1或2时，该值会被强制设置为1)
    
@@ -197,6 +197,8 @@ SOCKET根据对应的ID将json转发给第三方终端，终端收到 type = msg
    B通道强度加1 : { type : 2,strength: 1,message : 'set channel',channel:2,clientId:xxxx-xxxxxxxxx-xxxxx-xxxxx-xx,targetId:xxxx-xxxxxxxxx-xxxxx-xxxxx-xx }
 
    B通道强度变0 : { type : 3,strength: 0,message : 'set channel',channel:2,clientId:xxxx-xxxxxxxxx-xxxxx-xxxxx-xx,targetId:xxxx-xxxxxxxxx-xxxxx-xxxxx-xx }
+
+   B通道强度变10 : { type : 4,strength: 10,message : 'set channel',channel:2,clientId:xxxx-xxxxxxxxx-xxxxx-xxxxx-xx,targetId:xxxx-xxxxxxxxx-xxxxx-xxxxx-xx }
 
 2. 波形数据:
    
