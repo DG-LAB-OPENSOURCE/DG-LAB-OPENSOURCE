@@ -206,13 +206,11 @@ SOCKET根据对应的ID将json转发给第三方终端，终端收到 type = msg
    
    type : clientMsg 固定不变
 
-   message : A通道波形数据(16进制HEX数组json,具体见上面的协议说明)
+   message : 通道波形数据(16进制HEX数组json,具体见上面的协议说明)
 
-   message2 : B通道波形数据(16进制HEX数组json,具体见上面的协议说明)
+   time : 通道波形数据持续发送时长
 
-   time1 : A通道波形数据持续发送时长
-
-   time2 : B通道波形数据持续发送时长
+   channel : "A" -> A通道; "B" -> B通道
 
    clientId: 终端ID
 
