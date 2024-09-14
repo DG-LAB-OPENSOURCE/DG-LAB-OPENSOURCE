@@ -1,27 +1,14 @@
 ## SOCKET控制-控制端开源
 
 ### 更新
-time : 2024-06-03
+time : 2024-09-014
 
 desc :
 
-前端 WSConnection.js文件：
-function sendCustomMsg()方法中，发送消息的形式从一次性发送AB数据变为分别发送AB
-const dataA = { type: "clientMsg", message: msg1, time: timeA, channel: "A" }
-const dataB = { type: "clientMsg", message: msg2, time: timeB, channel: "B" }
-sendWsMsg(dataA)
-sendWsMsg(dataB)
+新增QA：
 
-后端 webSocketNode.js文件：
-修改了当收到的消息type为 case "clientMsg": 的逻辑
-1.当data.channel不存在时 报错406
-
-2.本来会一次发送两个clear命令分别清除AB当前队列, 现在会根据消息里的data.channel来分别发送清除指令, 同时 AB通道的发信计时器独立管理
-
-3.修改了function delaySendMsg(clientId, client, target, sendData, totalSends, timeSpace, channel)
-
-此方法本来是建立一个计时器 一次发送两个通道的数据.
-现在是根据data.channel分别创建AB各自的计时器，只有收到对应通道的覆盖消息时才会清除计时器重新开始发信
+[English_QA](socket/QA/Websocket_open_source_QA_English.txt)
+[Chinese_QA](socket/QA/Websocket_open_source_QA_Chinese.txt)
 
 ### 说明
 
