@@ -7,8 +7,8 @@ desc :
 
 新增QA：
 
-[English_QA](socket/QA/Websocket_open_source_QA_English.txt)
-[Chinese_QA](socket/QA/Websocket_open_source_QA_Chinese.txt)
+[English_QA](QA/Websocket_open_source_QA_English.txt)
+[Chinese_QA](QA/Websocket_open_source_QA_Chinese.txt)
 
 ### 说明
 
