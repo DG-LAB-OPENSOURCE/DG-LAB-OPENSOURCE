@@ -112,7 +112,10 @@ wss.on('connection', function connection(ws) {
                     }
                     if (clients.has(targetId)) {
                         const client = clients.get(targetId);
-                        const sendData = { type: "msg", clientId, targetId, message }
+                        const sendChannel = data.channel ? data.channel : 1;
+                        const sendStrength = data.strength //增加模式强度改成1
+                        const msg = "strength-" + sendChannel + "+2+" + sendStrength;
+                        const sendData = { type: "msg", clientId, targetId, message:msg }
                         client.send(JSON.stringify(sendData));
                     }
                     break;
