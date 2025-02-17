@@ -161,7 +161,7 @@ function toggleSwitch(id) {
     element.classList.toggle("switch-off");
 }
 
-function addOrIncrease(type, channelIndex, strength) {
+function decreaseOrIncrease(type, channelIndex, strength) {
     // 1 减少一  2 增加一  3 设置到
     // channel:1-A    2-B
     // 获取当前频道元素和当前值
