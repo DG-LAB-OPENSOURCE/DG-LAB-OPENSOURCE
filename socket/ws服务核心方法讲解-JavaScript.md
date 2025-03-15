@@ -136,7 +136,8 @@ function connectWs() {
 const WebSocket = require('ws');
 const { v4: uuidv4 } = require('uuid');
 
-// 储存已连接的cliendId，允许多个前端和app分别建立链接
+// 储存已连接的cliendId，允许前端和app建立链接，一对一关系
+// 如果要设置成一对N关系，请您修改Map的保存策略（将targetId对应的关系设置成数组而不是键值）
 const clients = new Map();
 
 // 存储通讯关系，clientId是key，targetId是value
