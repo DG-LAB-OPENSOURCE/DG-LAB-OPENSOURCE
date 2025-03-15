@@ -158,7 +158,7 @@ const heartbeatMsg = {
     message: "200"
 };
 
-// 定义定时器
+// 定义心跳定时器，独立于发信计时器，只要ws服务启动，此定时器就开始持续工作
 let heartbeatInterval;
 
 const wss = new WebSocket.Server({ port: 9999 }); // 定义链接端口，根据需求选择自己服务器上的可用端口
