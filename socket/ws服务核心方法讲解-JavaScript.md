@@ -136,21 +136,21 @@ function connectWs() {
 const WebSocket = require('ws');
 const { v4: uuidv4 } = require('uuid');
 
-// 储存已连接的cliendId，允许前端和app建立链接，一对一关系
-// 如果要设置成一对N关系，请您修改Map的保存策略（将targetId对应的关系设置成数组而不是键值）
+// 储存所有已连接的client，这包括前端和app，在后续消息转发时需要检查连接是否存在
 const clients = new Map();
 
-// 存储通讯关系，clientId是key，targetId是value
+// 存储通讯关系，clientId是key，targetId是value, 本示例中为允许前端和app建立链接，一对一关系
+// 如果要设置成一对N关系，请您修改Map的保存策略（将targetId对应的关系设置成数组而不是键值）
 const relations = new Map();
 
-const punishmentDuration = 5; //默认发送时间1秒
+const punishmentDuration = 5; //默认发送时间5秒
 
 const punishmentTime = 1; // 默认一秒发送1次
 
-// 存储客户端和发送计时器关系，每个客户端都有一个计时器
+// 存储客户端和发送计时器关系，每个客户端在发送波形消息时都有一个计时器，这个计时器用于波形数据的下发，比如每秒发送1次，一共发送5秒
 const clientTimers = new Map();
 
-// 定义心跳消息
+// 定义心跳消息，告知所有已连接的client，服务器正常工作，若长时间未收到则自动断开（表示网络异常）
 const heartbeatMsg = {
     type: "heartbeat",
     clientId: "",
