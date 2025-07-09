@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 // extract from chromium source code by @liuwayong
+// 尝试支持鼠标和触控支持
+
 (function () {
     'use strict';
     /**
@@ -54,6 +56,10 @@
         this.inverted = false;
         this.invertTimer = 0;
         this.resizeTimerId_ = null;
+        
+        // 触摸控制属性
+        this.longPressTimer_ = null; // 长按计时
+        this.isLongPress_ = false;   // 是否长按
 
         this.playCount = 0;
 
@@ -226,8 +232,9 @@
         CLICK: 'click',
         KEYDOWN: 'keydown',
         KEYUP: 'keyup',
-        // MOUSEDOWN: 'mousedown',
-        // MOUSEUP: 'mouseup',
+        MOUSEDOWN: 'mousedown',     // 鼠标按下
+        MOUSEUP: 'mouseup',         // 鼠标抬起
+        CONTEXTMENU: 'contextmenu', // 鼠标右键（需要阻止右键菜单）
         RESIZE: 'resize',
         TOUCHEND: 'touchend',
         TOUCHSTART: 'touchstart',
@@ -390,9 +397,10 @@
 
             this.outerContainerEl.appendChild(this.containerEl);
 
-            if (IS_MOBILE) {
-                this.createTouchController();
-            }
+            // 旧的触摸控制器创建逻辑
+            // if (IS_MOBILE) {
+            //     this.createTouchController();
+            // }
 
             this.startListening();
             this.update();
@@ -403,12 +411,13 @@
 
         /**
          * Create the touch controller. A div that covers whole screen.
+         * 事件监听器重新绑定到containerEl
          */
-        createTouchController: function () {
-            this.touchController = document.createElement('div');
-            this.touchController.className = Runner.classes.TOUCH_CONTROLLER;
-            this.outerContainerEl.appendChild(this.touchController);
-        },
+        // createTouchController: function () {
+        //     this.touchController = document.createElement('div');
+        //     this.touchController.className = Runner.classes.TOUCH_CONTROLLER;
+        //     this.outerContainerEl.appendChild(this.touchController);
+        // },
 
         /**
          * Debounce the resize event.
@@ -494,9 +503,6 @@
                 this.containerEl.style.webkitAnimation = 'intro .4s ease-out 1 both';
                 this.containerEl.style.width = this.dimensions.WIDTH + 'px';
 
-                // if (this.touchController) {
-                //     this.outerContainerEl.appendChild(this.touchController);
-                // }
                 this.playing = true;
                 this.activated = true;
             } else if (this.crashed) {
@@ -624,14 +630,25 @@
             return (function (evtType, events) {
                 switch (evtType) {
                     case events.KEYDOWN:
-                    case events.TOUCHSTART:
-                        //case events.MOUSEDOWN:
                         this.onKeyDown(e);
                         break;
                     case events.KEYUP:
-                    case events.TOUCHEND:
-                        //case events.MOUSEUP:
                         this.onKeyUp(e);
+                        break;
+                    case events.MOUSEDOWN:
+                        this.onMouseDown(e);
+                        break;
+                    case events.MOUSEUP:
+                        this.onMouseUp(e);
+                        break;
+                    case events.TOUCHSTART:
+                        this.onTouchStart(e);
+                        break;
+                    case events.TOUCHEND:
+                        this.onTouchEnd(e);
+                        break;
+                    case events.CONTEXTMENU:
+                        e.preventDefault(); // 阻止右键菜单
                         break;
                 }
             }.bind(this))(e.type, Runner.events);
@@ -645,16 +662,14 @@
             document.addEventListener(Runner.events.KEYDOWN, this);
             document.addEventListener(Runner.events.KEYUP, this);
 
-            // if (IS_MOBILE) {
-            //     // Mobile only touch devices.
-            //     this.touchController.addEventListener(Runner.events.TOUCHSTART, this);
-            //     this.touchController.addEventListener(Runner.events.TOUCHEND, this);
-            //     this.containerEl.addEventListener(Runner.events.TOUCHSTART, this);
-            // } else {
-            //     // Mouse.
-            //     document.addEventListener(Runner.events.MOUSEDOWN, this);
-            //     document.addEventListener(Runner.events.MOUSEUP, this);
-            // }
+            // Mouse.
+            this.containerEl.addEventListener(Runner.events.MOUSEDOWN, this);
+            document.addEventListener(Runner.events.MOUSEUP, this);
+            this.containerEl.addEventListener(Runner.events.CONTEXTMENU, this);
+
+            // Touch.
+            this.containerEl.addEventListener(Runner.events.TOUCHSTART, this);
+            this.containerEl.addEventListener(Runner.events.TOUCHEND, this);
         },
 
         /**
@@ -664,14 +679,163 @@
             document.removeEventListener(Runner.events.KEYDOWN, this);
             document.removeEventListener(Runner.events.KEYUP, this);
 
-            // if (IS_MOBILE) {
-            //     this.touchController.removeEventListener(Runner.events.TOUCHSTART, this);
-            //     this.touchController.removeEventListener(Runner.events.TOUCHEND, this);
-            //     this.containerEl.removeEventListener(Runner.events.TOUCHSTART, this);
-            // } else {
-            //     document.removeEventListener(Runner.events.MOUSEDOWN, this);
-            //     document.removeEventListener(Runner.events.MOUSEUP, this);
-            // }
+            // Mouse.
+            this.containerEl.removeEventListener(Runner.events.MOUSEDOWN, this);
+            document.removeEventListener(Runner.events.MOUSEUP, this);
+            this.containerEl.removeEventListener(Runner.events.CONTEXTMENU, this);
+
+            // Touch.
+            this.containerEl.removeEventListener(Runner.events.TOUCHSTART, this);
+            this.containerEl.removeEventListener(Runner.events.TOUCHEND, this);
+        },
+        
+        // 新增事件处理函数
+
+        /**
+         * 鼠标按下事件
+         * @param {Event} e
+         */
+        onMouseDown: function(e) {
+            // 阻止默认行为
+            e.preventDefault();
+
+            // 故障处理
+            if (this.crashed) {
+                return;
+            }
+
+            // 鼠标左键 (e.button === 0) 跳跃
+            if (e.button === 0) {
+                if (!this.playing) {
+                    this.loadSounds();
+                    this.playing = true;
+                    this.update();
+                }
+                if (!this.tRex.jumping) {
+                    this.playSound(this.soundFx.BUTTON_PRESS);
+                    this.tRex.startJump(this.currentSpeed);
+                }
+            } 
+            // 鼠标右键 (e.button === 2) 下蹲
+            else if (e.button === 2) {
+                 if (this.playing && !this.crashed) {
+                    if (this.tRex.jumping) {
+                        // 如果在空中，则加速下落
+                        this.tRex.setSpeedDrop();
+                    } else if (!this.tRex.ducking) {
+                        // 如果在地面上，则下蹲
+                        this.tRex.setDuck(true);
+                    }
+                }
+            }
+        },
+
+        /**
+         * 鼠标抬起事件
+         * @param {Event} e
+         */
+        onMouseUp: function(e) {
+            e.preventDefault();
+            
+            // 鼠标左键抬起 结束跳跃
+            if (e.button === 0) { 
+                if (this.isRunning()) {
+                    this.tRex.endJump();
+                }
+            } 
+            // 鼠标中键 (e.button === 1) 重启游戏
+            else if (e.button === 1) { 
+                if (this.crashed || this.paused) {
+                    this.restart();
+                }
+            } 
+            // 鼠标右键抬起 结束下蹲
+            else if (e.button === 2) { 
+                if (this.isRunning()) {
+                    this.tRex.speedDrop = false;
+                    this.tRex.setDuck(false);
+                }
+            }
+        },
+
+        /**
+         * 触摸开始事件
+         * @param {Event} e
+         */
+        onTouchStart: function(e) {
+            e.preventDefault();
+            
+            // 三指单击 停止游戏
+            if (e.touches.length === 3 && this.playing) {
+                this.stop();
+                this.messageBox.textContent = '游戏已停止，按空格或长按重启';
+                this.alreadyStop = true; // 设置为已手动停止
+                return;
+            }
+
+            if (this.crashed) {
+                return;
+            }
+
+            // 长按3秒 重启游戏
+            this.isLongPress_ = false;
+            this.longPressTimer_ = setTimeout(() => {
+                if(this.crashed || !this.playing || this.paused) {
+                     this.restart();
+                     this.isLongPress_ = true;
+                }
+            }, 3000);
+
+            // 首次触摸 开始游戏
+            if (!this.playing) {
+                this.loadSounds();
+                this.playing = true;
+                this.update();
+            }
+
+            // 触摸位置
+            var touch = e.touches[0];
+            var touchY = touch.pageY - this.canvas.getBoundingClientRect().top;
+            var canvasHeight = this.canvas.offsetHeight;
+
+            if (touchY <= canvasHeight / 2) {
+                // 上半部分 跳跃
+                if (!this.tRex.jumping) {
+                    this.playSound(this.soundFx.BUTTON_PRESS);
+                    this.tRex.startJump(this.currentSpeed);
+                }
+            } else {
+                // 下半部分 下蹲
+                if (this.playing && !this.crashed) {
+                    if (this.tRex.jumping) {
+                        this.tRex.setSpeedDrop();
+                    } else if (!this.tRex.ducking) {
+                        this.tRex.setDuck(true);
+                    }
+                }
+            }
+        },
+
+        /**
+         * 触摸结束事件
+         * @param {Event} e
+         */
+        onTouchEnd: function(e) {
+            e.preventDefault();
+            // 清除长按计时器
+            clearTimeout(this.longPressTimer_);
+
+            // 如果是长按重启，则不执行后续操作
+            if (this.isLongPress_) {
+                return;
+            }
+
+            // 结束跳跃或下蹲
+            if (this.isRunning()) {
+                this.tRex.endJump();
+                this.tRex.speedDrop = false;
+                this.tRex.setDuck(false);
+            }
         },
 
         /**
@@ -679,6 +843,7 @@
          * @param {Event} e
          */
         onKeyDown: function (e) {
+            // 移除触摸相关的逻辑，由onTouchStart处理
             if (wsConn == null || targetWSId === "") {
                 console.log("请先点击右上角的连接")
                 showToast("请先点击右上角的连接")
@@ -688,14 +853,9 @@
             if (activeElement.tagName === 'BUTTON' || activeElement.tagName === 'SELECT') {
                 e.stopPropagation();
             }
-            // Prevent native page scrolling whilst tapping on mobile.
-            if (IS_MOBILE && this.playing) {
-                e.preventDefault();
-            }
 
             if (e.target != this.detailsButton) {
-                if (!this.crashed && (Runner.keycodes.JUMP[e.keyCode] ||
-                    e.type == Runner.events.TOUCHSTART)) {
+                if (!this.crashed && Runner.keycodes.JUMP[e.keyCode]) {
                     if (!this.playing) {
                         this.loadSounds();
                         this.playing = true;
@@ -709,11 +869,6 @@
                         this.playSound(this.soundFx.BUTTON_PRESS);
                         this.tRex.startJump(this.currentSpeed);
                     }
-                }
-
-                if (this.crashed && e.type == Runner.events.TOUCHSTART &&
-                    e.currentTarget == this.containerEl) {
-                    this.restart();
                 }
             }
 
@@ -736,9 +891,8 @@
          */
         onKeyUp: function (e) {
             var keyCode = String(e.keyCode);
-            var isjumpKey = Runner.keycodes.JUMP[keyCode] ||
-                e.type == Runner.events.TOUCHEND ||
-                e.type == Runner.events.MOUSEDOWN;
+            // 移除触摸和鼠标相关的逻辑
+            var isjumpKey = Runner.keycodes.JUMP[keyCode];
 
             if (this.isRunning() && isjumpKey) {
                 this.tRex.endJump();
@@ -746,15 +900,7 @@
                 this.tRex.speedDrop = false;
                 this.tRex.setDuck(false);
             }
-            //else if (this.crashed) {
-            // Check that enough time has elapsed before allowing jump key to restart.
-            //var deltaTime = getTimeStamp() - this.time;
-
-            // if (Runner.keycodes.RESTART[keyCode] || this.isLeftClickOnCanvas(e) ||
-            //     (deltaTime >= this.config.GAMEOVER_CLEAR_TIME &&
-            //         Runner.keycodes.JUMP[keyCode])) {
-            //     this.restart();
-            // }
+            
             if (this.alreadyStop && Runner.keycodes.RESTART[keyCode]) {
                 // 重启游戏
                 this.crashed = false;
@@ -767,23 +913,7 @@
                 this.enterGameOver();
                 this.messageBox.textContent = '按下空格开始游戏'
             }
-            // } else if (this.paused && isjumpKey) {
-            //     // Reset the jump state
-            //     this.tRex.reset();
-            //     this.play();
-            // }
         },
-
-        /**
-         * Returns whether the event was a left click on canvas.
-         * On Windows right click is registered as a click.
-         * @param {Event} e
-         * @return {boolean}
-         */
-        // isLeftClickOnCanvas: function (e) {
-        //     return e.button != null && e.button < 2 &&
-        //         e.type == Runner.events.MOUSEUP && e.target == this.canvas;
-        // },
 
         /**
          * RequestAnimationFrame wrapper.
@@ -813,21 +943,17 @@
             }
             this.playSound(this.soundFx.HIT);
             vibrate(200);
-            this.messageBox.textContent = '按下P停止游戏';
-
+            this.enterGameOver(); // 调用enterGameOver来处理后续逻辑
+            this.messageBox.textContent = '游戏结束！按空格或长按重启';
         },
 
         /**
        * Game over state.
        */
         enterGameOver: function () {
-            this.alreadyStop = true;
             this.stop();
-            this.crashed = true; //撞到过 可以重启
-            //this.distanceMeter.acheivement = false;
-            if (this.distanceMeter?.achievement !== undefined) {
-                this.distanceMeter.achievement = false;
-            }
+            this.crashed = true;
+            this.distanceMeter.achievement = false;
 
             this.tRex.update(100, Trex.status.CRASHED);
 
@@ -868,11 +994,13 @@
         },
 
         restart: function () {
-            if (!this.raqId) {
+            if (!this.raqId || this.paused) {
                 this.playCount++;
                 this.runningTime = 0;
                 this.playing = true;
+                this.paused = false;
                 this.crashed = false;
+                this.alreadyStop = false;
                 this.distanceRan = 0;
                 this.setSpeed(this.config.SPEED);
                 this.time = getTimeStamp();
@@ -884,6 +1012,7 @@
                 this.playSound(this.soundFx.BUTTON_PRESS);
                 this.invert(true);
                 this.update();
+                this.messageBox.textContent = '按下P停止游戏';
             }
         },
 
@@ -934,7 +1063,7 @@
          * @param {SoundBuffer} soundBuffer
          */
         playSound: function (soundBuffer) {
-            if (soundBuffer) {
+            if (soundBuffer && this.audioContext) {
                 var sourceNode = this.audioContext.createBufferSource();
                 sourceNode.buffer = soundBuffer;
                 sourceNode.connect(this.audioContext.destination);
@@ -1179,10 +1308,14 @@
      * @param {!Obstacle} obstacle
      * @param {!Trex} tRex T-rex object.
      * @param {HTMLCanvasContext} opt_canvasCtx Optional canvas context for drawing
-     *    collision boxes.
+     * collision boxes.
      * @return {Array<CollisionBox>}
      */
     function checkForCollision(obstacle, tRex, opt_canvasCtx) {
+        if (!obstacle) {
+            return false;
+        }
+
         var obstacleBoxXPos = Runner.defaultDimensions.WIDTH + obstacle.xPos;
 
         // Adjustments are made to the bounding box as there is a 1 pixel white
@@ -1948,7 +2081,7 @@
         this.container = null;
 
         this.digits = [];
-        this.acheivement = false;
+        this.achievement = false;
         this.defaultString = '';
         this.flashTimer = 0;
         this.flashIterations = 0;
@@ -2088,13 +2221,13 @@
          * Update the distance meter.
          * @param {number} distance
          * @param {number} deltaTime
-         * @return {boolean} Whether the acheivement sound fx should be played.
+         * @return {boolean} Whether the achievement sound fx should be played.
          */
         update: function (deltaTime, distance) {
             var paint = true;
             var playSound = false;
 
-            if (!this.acheivement) {
+            if (!this.achievement) {
                 distance = this.getActualDistance(distance);
                 // Score has gone beyond the initial digit count.
                 if (distance > this.maxScore && this.maxScoreUnits ==
@@ -2106,10 +2239,10 @@
                 }
 
                 if (distance > 0) {
-                    // Acheivement unlocked
+                    // Achievement unlocked
                     if (distance % this.config.ACHIEVEMENT_DISTANCE == 0) {
                         // Flash score and play sound.
-                        this.acheivement = true;
+                        this.achievement = true;
                         this.flashTimer = 0;
                         playSound = true;
                     }
@@ -2122,7 +2255,7 @@
                     this.digits = this.defaultString.split('');
                 }
             } else {
-                // Control flashing of the score on reaching acheivement.
+                // Control flashing of the score on reaching achievement.
                 if (this.flashIterations <= this.config.FLASH_ITERATIONS) {
                     this.flashTimer += deltaTime;
 
@@ -2134,7 +2267,7 @@
                         this.flashIterations++;
                     }
                 } else {
-                    this.acheivement = false;
+                    this.achievement = false;
                     this.flashIterations = 0;
                     this.flashTimer = 0;
                 }
@@ -2181,7 +2314,7 @@
          */
         reset: function () {
             this.update(0);
-            this.acheivement = false;
+            this.achievement = false;
         }
     };
 
@@ -2628,8 +2761,8 @@
          * @param {number} deltaTime
          * @param {number} currentSpeed
          * @param {boolean} updateObstacles Used as an override to prevent
-         *     the obstacles from being updated / added. This happens in the
-         *     ease in section.
+         * the obstacles from being updated / added. This happens in the
+         * ease in section.
          * @param {boolean} showNightMode Night mode activated.
          */
         update: function (deltaTime, currentSpeed, updateObstacles, showNightMode) {
