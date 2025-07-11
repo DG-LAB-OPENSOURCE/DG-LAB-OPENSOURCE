@@ -112,7 +112,10 @@ wss.on('connection', function connection(ws) {
                     }
                     if (clients.has(targetId)) {
                         const client = clients.get(targetId);
-                        const sendData = { type: "msg", clientId, targetId, message }
+                        const sendChannel = data.channel ? data.channel : 1;
+                        const sendStrength = data.strength //增加模式强度改成1
+                        const msg = "strength-" + sendChannel + "+2+" + sendStrength;
+                        const sendData = { type: "msg", clientId, targetId, message: msg }
                         client.send(JSON.stringify(sendData));
                     }
                     break;
@@ -165,11 +168,11 @@ wss.on('connection', function connection(ws) {
                             setTimeout(() => {
                                 delaySendMsg(clientId, ws, target, sendData, totalSends, timeSpace, data.channel);
                             }, 150);
-                        } 
+                        }
                         else {
                             // 不存在未发完的消息 直接发送
                             delaySendMsg(clientId, ws, target, sendData, totalSends, timeSpace, data.channel);
-                            console.log("通道" + data.channel +"消息发送中，总消息数：" + totalSends + "持续时间：" + sendtime)
+                            console.log("通道" + data.channel + "消息发送中，总消息数：" + totalSends + "持续时间：" + sendtime)
                         }
                     } else {
                         console.log(`未找到匹配的客户端，clientId: ${clientId}`);
