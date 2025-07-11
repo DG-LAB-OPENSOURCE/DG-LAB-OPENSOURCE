@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="index.css?v=2404221746">
     <script src="index.js?v=2404221746"></script>
     <script src="wsConnection.js?v=2404221746"></script>
-    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"/>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport" />
 </head>
 
 <body id="t" class="offline">
@@ -33,9 +33,9 @@
 
                 <span>A通道: 当前强度:</span>
                 <span id="channel-a">0</span>
-                <button onclick="addOrIncrease(1, 1, 1)"> 强度-1 </button>
-                <button onclick="addOrIncrease(2, 1, 1)"> 强度+1 </button>
-                <button onclick="addOrIncrease(3, 1)"> 强度置0 </button>
+                <button onclick="decreaseOrIncrease(1, 1, 1)"> 强度-1 </button>
+                <button onclick="decreaseOrIncrease(2, 1, 1)"> 强度+1 </button>
+                <button onclick="decreaseOrIncrease(3, 1)"> 强度置0 </button>
                 <span>软上限: </span><span id="soft-a">0</span>
                 <span>强度跟随软上限</span>
                 <img src="question.svg" class="question-img" id="question1" />
@@ -82,9 +82,9 @@
             <div class="btn-container">
                 <span>B通道: 当前强度:</span>
                 <span id="channel-b">0</span>
-                <button onclick="addOrIncrease(1, 2, 1)"> 强度-1 </button>
-                <button onclick="addOrIncrease(2, 2, 1)"> 强度+1 </button>
-                <button onclick="addOrIncrease(3, 2)"> 强度置0 </button>
+                <button onclick="decreaseOrIncrease(1, 2, 1)"> 强度-1 </button>
+                <button onclick="decreaseOrIncrease(2, 2, 1)"> 强度+1 </button>
+                <button onclick="decreaseOrIncrease(3, 2)"> 强度置0 </button>
                 <span>软上限: </span><span id="soft-b">0</span>
                 <span>强度跟随软上限</span>
                 <img src="question.svg" class="question-img" id="question1" />
