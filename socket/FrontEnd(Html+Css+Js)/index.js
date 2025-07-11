@@ -54,11 +54,6 @@
         this.inverted = false;
         this.invertTimer = 0;
         this.resizeTimerId_ = null;
-        
-        // 触摸控制属性
-        this.longPressTimer_ = null; // 长按计时
-        this.isLongPress_ = false;   // 是否长按
-
         this.playCount = 0;
 
         // Sound FX.
@@ -214,10 +209,10 @@
      * @enum {Object}
      */
     Runner.keycodes = {
-        JUMP: { '32': 1 },  // 空格 spacebar
-        DUCK: { '83': 1 },  // 趴下
+        JUMP: { '32': 1 },  // 空格
+        DUCK: { '83': 1 },  // S趴下
         RESTART: { '32': 1 },  // 空格
-        STOP: { '80': 1 }  // P作为停止快捷键
+        STOP: { '80': 1 }  // P暂停
     };
 
 
@@ -686,19 +681,22 @@
             this.containerEl.removeEventListener(Runner.events.TOUCHSTART, this);
             this.containerEl.removeEventListener(Runner.events.TOUCHEND, this);
         },
-        
-        // 新增事件处理函数
 
         /**
          * 鼠标按下事件
          * @param {Event} e
          */
-        onMouseDown: function(e) {
-            // 阻止默认行为
+        onMouseDown: function (e) {
             e.preventDefault();
 
-            // 故障处理
             if (this.crashed) {
+                this.restart();
+                return;
+            }
+
+            if (this.paused && e.button === 0) {
+                this.play();
+                this.messageBox.textContent = '';
                 return;
             }
 
@@ -713,97 +711,9 @@
                     this.playSound(this.soundFx.BUTTON_PRESS);
                     this.tRex.startJump(this.currentSpeed);
                 }
-            } 
+            }
             // 鼠标右键 (e.button === 2) 下蹲
             else if (e.button === 2) {
-                 if (this.playing && !this.crashed) {
-                    if (this.tRex.jumping) {
-                        // 如果在空中，则加速下落
-                        this.tRex.setSpeedDrop();
-                    } else if (!this.tRex.ducking) {
-                        // 如果在地面上，则下蹲
-                        this.tRex.setDuck(true);
-                    }
-                }
-            }
-        },
-
-        /**
-         * 鼠标抬起事件
-         * @param {Event} e
-         */
-        onMouseUp: function(e) {
-            e.preventDefault();
-            
-            // 鼠标左键抬起 结束跳跃
-            if (e.button === 0) { 
-                if (this.isRunning()) {
-                    this.tRex.endJump();
-                }
-            } 
-            // 鼠标中键 (e.button === 1) 重启游戏
-            else if (e.button === 1) { 
-                if (this.crashed || this.paused) {
-                    this.restart();
-                }
-            } 
-            // 鼠标右键抬起 结束下蹲
-            else if (e.button === 2) { 
-                if (this.isRunning()) {
-                    this.tRex.speedDrop = false;
-                    this.tRex.setDuck(false);
-                }
-            }
-        },
-
-        /**
-         * 触摸开始事件
-         * @param {Event} e
-         */
-        onTouchStart: function(e) {
-            e.preventDefault();
-            
-            // 三指单击 停止游戏
-            if (e.touches.length === 3 && this.playing) {
-                this.stop();
-                this.messageBox.textContent = '游戏已停止，按空格或长按重启';
-                this.alreadyStop = true; // 设置为已手动停止
-                return;
-            }
-
-            if (this.crashed) {
-                return;
-            }
-
-            // 长按3秒 重启游戏
-            this.isLongPress_ = false;
-            this.longPressTimer_ = setTimeout(() => {
-                if(this.crashed || !this.playing || this.paused) {
-                     this.restart();
-                     this.isLongPress_ = true;
-                }
-            }, 3000);
-
-            // 首次触摸 开始游戏
-            if (!this.playing) {
-                this.loadSounds();
-                this.playing = true;
-                this.update();
-            }
-
-            // 触摸位置
-            var touch = e.touches[0];
-            var touchY = touch.pageY - this.canvas.getBoundingClientRect().top;
-            var canvasHeight = this.canvas.offsetHeight;
-
-            if (touchY <= canvasHeight / 2) {
-                // 上半部分 跳跃
-                if (!this.tRex.jumping) {
-                    this.playSound(this.soundFx.BUTTON_PRESS);
-                    this.tRex.startJump(this.currentSpeed);
-                }
-            } else {
-                // 下半部分 下蹲
                 if (this.playing && !this.crashed) {
                     if (this.tRex.jumping) {
                         this.tRex.setSpeedDrop();
@@ -815,24 +725,108 @@
         },
 
         /**
-         * 触摸结束事件
+         * 鼠标抬起事件
          * @param {Event} e
          */
-        onTouchEnd: function(e) {
+        onMouseUp: function (e) {
             e.preventDefault();
-            // 清除长按计时器
-            clearTimeout(this.longPressTimer_);
 
-            // 如果是长按重启，则不执行后续操作
-            if (this.isLongPress_) {
+            if (e.button === 0) {
+                if (this.isRunning()) {
+                    this.tRex.endJump();
+                }
+            }
+            // 鼠标中键 (e.button === 1) 重启游戏
+            // else if (e.button === 1) {
+            //     if (this.crashed || this.paused) {
+            //         this.restart();
+            //     }
+            // }
+            // 鼠标右键抬起 结束下蹲
+            else if (e.button === 2) {
+                if (this.isRunning()) {
+                    this.tRex.speedDrop = false;
+                    this.tRex.setDuck(false);
+                }
+            }
+        },
+
+        /**
+         * 触摸开始事件
+         * @param {Event} e
+         */
+        onTouchStart: function (e) {
+            e.preventDefault();
+
+            if (this.paused) {
+                this.play();
+                this.messageBox.textContent = '';
                 return;
             }
 
-            // 结束跳跃或下蹲
+            if (this.crashed) {
+                this.restart();
+                return;
+            }
+
+            // 处理多点触摸手势
+            if (this.playing && e.touches.length === 2) {
+                this.stop();
+                this.messageBox.textContent = '游戏已暂停';
+                return;
+            }
+
+            if (!this.playing) {
+                this.loadSounds();
+                this.playing = true;
+                this.update();
+                this.tRex.startJump(this.currentSpeed);
+            } else {
+                var touch = e.touches[0];
+                var rect = this.canvas.getBoundingClientRect();
+                var touchY = touch.clientY - rect.top;
+                var canvasHeight = this.canvas.offsetHeight;
+
+                if (touchY <= canvasHeight / 2) { // 上半区
+                    if (!this.tRex.jumping) {
+                        this.playSound(this.soundFx.BUTTON_PRESS);
+                        this.tRex.startJump(this.currentSpeed);
+                    }
+                } else { // 下半区
+                    if (this.tRex.jumping) {
+                        this.tRex.setSpeedDrop();
+                    } else if (!this.tRex.ducking) {
+                        this.tRex.setDuck(true);
+                    }
+                }
+            }
+            this.lastTouchStartTime = Date.now();
+        },
+
+        /**
+         * 触摸结束事件
+         * @param {Event} e
+         */
+        onTouchEnd: function (e) {
+            e.preventDefault();
+
+            // 防止游戏结束瞬间自动重启
+            const currentTime = Date.now();
+            if (this.crashed && (currentTime - this.lastTouchStartTime) < 2000) {
+                // 2秒内不触发重启
+                return;
+            }
+
+            // 重启
+            if (this.crashed) {
+                this.restart();
+                return;
+            }
+
             if (this.isRunning()) {
-                this.tRex.endJump();
-                this.tRex.speedDrop = false;
-                this.tRex.setDuck(false);
+                if (this.tRex.ducking) {
+                    this.tRex.setDuck(false);
+                }
             }
         },
 
@@ -842,42 +836,47 @@
          */
         onKeyDown: function (e) {
             // 移除触摸相关的逻辑，由onTouchStart处理
-            if (wsConn == null || targetWSId === "") {
-                console.log("请先点击右上角的连接")
-                showToast("请先点击右上角的连接")
-                return;
-            }
+            // 不强制连接后才能游戏
+            // if (wsConn == null || targetWSId === "") {
+            //     console.log("请先点击右上角的连接")
+            //     showToast("请先点击右上角的连接")
+            //     return;
+            // }
             const activeElement = document.activeElement;
             if (activeElement.tagName === 'BUTTON' || activeElement.tagName === 'SELECT') {
                 e.stopPropagation();
             }
 
             if (e.target != this.detailsButton) {
-                if (!this.crashed && Runner.keycodes.JUMP[e.keyCode]) {
+                if (Runner.keycodes.JUMP[e.keyCode]) {
+                    if (this.paused) {
+                        this.play();
+                        this.messageBox.textContent = '';
+                        return;
+                    }
+
+                    if (this.crashed) {
+                        this.restart();
+                        return;
+                    }
+
                     if (!this.playing) {
                         this.loadSounds();
                         this.playing = true;
                         this.update();
-                        if (window.errorPageController) {
-                            errorPageController.trackEasterEgg();
-                        }
                     }
-                    //  Play sound effect and jump on starting the game for the first time.
                     if (!this.tRex.jumping && !this.tRex.ducking) {
                         this.playSound(this.soundFx.BUTTON_PRESS);
                         this.tRex.startJump(this.currentSpeed);
                     }
                 }
-            }
-
-            if (this.playing && !this.crashed && Runner.keycodes.DUCK[e.keyCode]) {
-                e.preventDefault();
-                if (this.tRex.jumping) {
-                    // Speed drop, activated only when jump key is not pressed.
-                    this.tRex.setSpeedDrop();
-                } else if (!this.tRex.jumping && !this.tRex.ducking) {
-                    // Duck.
-                    this.tRex.setDuck(true);
+                else if (this.playing && !this.crashed && Runner.keycodes.DUCK[e.keyCode]) {
+                    e.preventDefault();
+                    if (this.tRex.jumping) {
+                        this.tRex.setSpeedDrop();
+                    } else if (!this.tRex.jumping && !this.tRex.ducking) {
+                        this.tRex.setDuck(true);
+                    }
                 }
             }
         },
@@ -889,27 +888,27 @@
          */
         onKeyUp: function (e) {
             var keyCode = String(e.keyCode);
-            // 移除触摸和鼠标相关的逻辑
             var isjumpKey = Runner.keycodes.JUMP[keyCode];
+
+            // 如果是暂停/继续键
+            if (this.activated && Runner.keycodes.STOP[keyCode]) {
+                if (this.paused) {
+                    // 如果游戏已暂停，则继续
+                    this.play();
+                    this.messageBox.textContent = '';
+                } else if (this.playing) {
+                    // 如果游戏正在进行，则暂停
+                    this.stop();
+                    this.messageBox.textContent = '游戏已暂停';
+                }
+                return; // 防止执行后续代码
+            }
 
             if (this.isRunning() && isjumpKey) {
                 this.tRex.endJump();
             } else if (Runner.keycodes.DUCK[keyCode]) {
                 this.tRex.speedDrop = false;
                 this.tRex.setDuck(false);
-            }
-            
-            if (this.alreadyStop && Runner.keycodes.RESTART[keyCode]) {
-                // 重启游戏
-                this.crashed = false;
-                this.alreadyStop = false;
-                this.restart();
-                this.messageBox.textContent = '按下P停止游戏'
-            }
-            if (Runner.keycodes.STOP[keyCode] && !this.alreadyStop) {
-                //暂停游戏
-                this.enterGameOver();
-                this.messageBox.textContent = '按下空格开始游戏'
             }
         },
 
@@ -942,7 +941,7 @@
             this.playSound(this.soundFx.HIT);
             vibrate(200);
             this.enterGameOver(); // 调用enterGameOver来处理后续逻辑
-            this.messageBox.textContent = '游戏结束！按空格或长按重启';
+            this.messageBox.textContent = '游戏结束！';
         },
 
         /**
@@ -993,24 +992,24 @@
 
         restart: function () {
             if (!this.raqId || this.paused) {
-                this.playCount++;
-                this.runningTime = 0;
-                this.playing = true;
-                this.paused = false;
-                this.crashed = false;
-                this.alreadyStop = false;
-                this.distanceRan = 0;
-                this.setSpeed(this.config.SPEED);
-                this.time = getTimeStamp();
-                this.containerEl.classList.remove(Runner.classes.CRASHED);
-                this.clearCanvas();
-                this.distanceMeter.reset(this.highestScore);
-                this.horizon.reset();
-                this.tRex.reset();
-                this.playSound(this.soundFx.BUTTON_PRESS);
-                this.invert(true);
-                this.update();
-                this.messageBox.textContent = '按下P停止游戏';
+            this.playCount++;
+            this.runningTime = 0;
+            this.playing = true;
+            this.paused = false;
+            this.crashed = false;
+            this.alreadyStop = false;
+            this.distanceRan = 0;
+            this.setSpeed(this.config.SPEED);
+            this.time = getTimeStamp();
+            this.containerEl.classList.remove(Runner.classes.CRASHED);
+            this.clearCanvas();
+            this.distanceMeter.reset(this.highestScore);
+            this.horizon.reset();
+            this.tRex.reset();
+            this.playSound(this.soundFx.BUTTON_PRESS);
+            this.invert(true);
+            this.update();
+            this.messageBox.textContent = '按下P暂停游戏';
             }
         },
 
@@ -1033,10 +1032,10 @@
             const scaledCanvasHeight = this.dimensions.HEIGHT * scale;
             // Positions the game container at 10% of the available vertical window
             // height minus the game container height.
-            const translateY = Math.ceil(Math.max(0, (windowHeight - scaledCanvasHeight -
+            const translateY = (Math.ceil(Math.max(0, (windowHeight - scaledCanvasHeight -
                 Runner.config.ARCADE_MODE_INITIAL_TOP_POSITION) *
                 Runner.config.ARCADE_MODE_TOP_POSITION_PERCENT)) *
-                window.devicePixelRatio;
+                window.devicePixelRatio) - 80;
 
             const cssScale = scale;
             this.containerEl.style.transform =

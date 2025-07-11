@@ -149,11 +149,15 @@
                     <br><br>
                     当前页面是我们提供的Web游戏demo，当小恐龙碰到障碍物时，就会控制郊狼输出脉冲。
                     <br><br>
-                    要开始游戏，首先点击右上角<span class="notify">【连接】</span>按钮生成二维码。然后在APP中选择右下角<span class="notify">【Socket控制】</span>模式，连接设备后点击<span class="notify">【连接socket服务器】</span>按钮扫码完成连接。
+                    要开始游戏，首先点击右上角<span class="notify">【连接】</span>按钮生成二维码。然后在APP中选择右下角<span
+                        class="notify">【Socket控制】</span>模式，连接设备后点击<span class="notify">【连接socket服务器】</span>按钮扫码完成连接。
                     <br><br>
-                    我们已经在GitHub上开源相关协议和示例代码，以便开发者们自行搭建服务器进行控制，详情请访问链接：<span class="notify"><a href="https://github.com/DG-LAB-OPENSOURCE/DG-LAB-OPENSOURCE">点此跳转GitHub</a></span>
+                    我们已经在GitHub上开源相关协议和示例代码，以便开发者们自行搭建服务器进行控制，详情请访问链接：<span class="notify"><a
+                            href="https://github.com/DG-LAB-OPENSOURCE/DG-LAB-OPENSOURCE">点此跳转GitHub</a></span>
                     <br><br>
-                    需要注意的是，Socket控制协议是开放的，我们无法对第三方控制端进行审核。<span class="notify"><strong>请不要扫描来源不明的Socket二维码</strong></span>。在您准备进行连接前，<span class="notify"><strong>请确保您已经设置好强度上限保护</strong></span>。
+                    需要注意的是，Socket控制协议是开放的，我们无法对第三方控制端进行审核。<span
+                        class="notify"><strong>请不要扫描来源不明的Socket二维码</strong></span>。在您准备进行连接前，<span
+                        class="notify"><strong>请确保您已经设置好强度上限保护</strong></span>。
                 </p>
                 <div class="info-close">
                     <button class="info-close-btn" onclick="closeInfo()">我知道了</button>
@@ -180,16 +184,19 @@
     </div>
     <div class="intro-game">
         <div id="messageBox" class="sendmessage">
-            <h1 style="text-align: center;font-family: 'Open Sans', sans-serif;">按空格开始游戏</h1>
+            <h1 style="text-align: center;font-family: 'Open Sans', sans-serif;">按“空格”或“鼠标左键/点击小恐龙”开始游戏</h1>
         </div>
         <div class="game-title">
             <div class="game-tips" id="game-tips">游戏规则</div>
             <button class="tips-hide" onclick="hideOrShowTips()" id="tip-btn">隐藏</button>
         </div>
         <div class="game-content">
-            <h4>操作：空格：跳跃/开始游戏，S键：趴下，P：停止游戏<br><br>每当小恐龙碰到障碍物时，执行屏幕上方设置的波形和强度</h4>
+            <h4>鼠标操控：左键 - 跳跃 | 右键 - 趴下 | P键 - 暂停/继续游戏<br>
+                键盘操控：空格 - 跳跃 | S键 - 趴下 | P键 - 暂停/继续游戏<br>
+                触摸操控：单击上半部分 - 跳跃 | 单击下半部分 - 趴下 | 两指单击 - 暂停游戏 | 单击 - 继续游戏<br><br>
+                每当小恐龙碰到障碍物时，执行屏幕上方设置的波形和强度</h4>
             <P>强度设置：点击屏幕上方A/B通道强度增减按钮设置强度，点击[时长]下拉菜单选择发送时长</P>
-            <p>提示：Websocket链接断开时游戏会直接结束，游戏异常请刷新页面</p>
+            <!-- <p>提示：Websocket链接断开时游戏会直接结束，游戏异常请刷新页面</p> -->
         </div>
     </div>
 </body>
